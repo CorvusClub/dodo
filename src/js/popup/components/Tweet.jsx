@@ -152,12 +152,12 @@ class Tweet extends React.Component {
     let is_reply = false;
     let is_quote = false;
     
-    if(tweet.quoted_status) {
-      is_quote = true;
-    }
     if(tweet.retweeted_status) {
       tweet = tweet.retweeted_status;
       is_rt = true;
+    }
+    if(tweet.quoted_status) {
+      is_quote = true;
     }
     if(tweet.in_reply_to_status_id_str) {
       is_reply = true;
