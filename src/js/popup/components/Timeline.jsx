@@ -31,6 +31,10 @@ class Timeline extends React.Component {
       let scrollPos = this.containerRef.current.scrollTop;
       let current_top_id = this.state.tweet_at_top_of_screen;
       let current_top = document.getElementById(current_top_id);
+      if(!current_top) {
+        this.setState((state => ({tweet_at_top_of_screen: state.high_tweet_id})));
+        return;
+      }
       let rect = current_top.getBoundingClientRect();
 
       // is top tweet above the screen?
