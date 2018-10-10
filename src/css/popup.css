@@ -8,6 +8,12 @@ body {
 
 #app-container {
   min-height: 600px;
+  max-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
+
+
   --tweet-seperator-color: #e6ecf0;
   --tweet-text-primary-color: black;
   --tweet-text-secondary-color: #657786;
@@ -29,23 +35,104 @@ body {
   --scroll-handle-color: #63686d;
 }
 
-::-webkit-scrollbar {
+.timeline::-webkit-scrollbar {
   width: 12px;
 }
 
-::-webkit-scrollbar-track {
+.timeline::-webkit-scrollbar-track {
   box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
   border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb {
+.timeline::-webkit-scrollbar-thumb {
   background: var(--scroll-handle-color);
+}
+
+.open_composer {
+  margin: 0.2em 0.5em;
+  justify-self: end;
+}
+
+.tweet_compose .close {
+  grid-column: 2;
+  align-self: flex-start;
+  justify-self: start;
+}
+
+.tweet_compose {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: 1fr auto;
+  grid-row: 1;
+  justify-self: stretch;
+  padding: 0.3em;
+}
+.tweet_compose .editor {
+  resize: none;
+  height: 5em;
+  grid-column: 1;
+  grid-row: 1;
+
+  border: 2px solid var(--tweet-border-color);
+  border-radius: 0.8em;
+  padding: 0.6em;
+
+  word-break: break-word;
+
+  overflow: auto;
+}
+.tweet_compose .editor:focus {
+  box-shadow: 0 0 3px 1px var(--tweet-border-color);
+  outline: none;
+}
+.editor .extra_text {
+  background-color: #e795af;
+}
+.tweet_compose .tweet_buttons {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+
+  padding-top: 0.4em;
+}
+.send_tweet {
+  background-color: #1da1f2;
+  padding: 0.5em 1em;
+  border-radius: 2em;
+  border: none;
+  color: white;
+  font-weight: bold;
+}
+.send_tweet:focus {
+  box-shadow: 0 0 0 2px var(--background-color), 0 0 0 4px #1da1f2;
+  outline: none;
+}
+.send_tweet:hover {
+  background-color: #006dbf;
+}
+.send_tweet:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.tweet_compose .character_count {
+  grid-column: 1;
+  grid-row: 1;
+
+  align-self: flex-end;
+  justify-self: end;
+  margin-right: 1.8em;
+  margin-bottom: 0.3em;
+
+  z-index: 1;
 }
 
 .timeline {
   min-width: 640px;
-  height: 100vmin;
   overflow-y: scroll;
+  grid-row: 2;
+  position: relative;
 }
 img.emoji {
   height: 1em;
@@ -175,6 +262,5 @@ img.emoji {
 
 .timeline .showNewerTweets {
   position: fixed;
-  top: 0.2em;
   right: 0.2em;
 }
