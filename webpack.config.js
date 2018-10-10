@@ -1,7 +1,6 @@
 var webpack = require("webpack"),
     path = require("path"),
     fileSystem = require("fs"),
-    env = require("./utils/env"),
     CleanWebpackPlugin = require("clean-webpack-plugin"),
     CopyWebpackPlugin = require("copy-webpack-plugin"),
     HtmlWebpackPlugin = require("html-webpack-plugin"),
@@ -10,7 +9,7 @@ const package = require('./package.json');
 // load the secrets
 var alias = {};
 
-var secretsPath = path.join(__dirname, ("secrets." + env.NODE_ENV + ".js"));
+var secretsPath = path.join(__dirname, ("secrets.development.js"));
 
 var fileExtensions = ["jpg", "jpeg", "png", "gif", "eot", "otf", "svg", "ttf", "woff", "woff2"];
 
@@ -60,10 +59,6 @@ var options = {
   plugins: [
     // clean the build folder
     new CleanWebpackPlugin(["build"]),
-    // expose and write the allowed env vars on the compiled bundle
-    new webpack.DefinePlugin({
-      "process.env.NODE_ENV": JSON.stringify(env.NODE_ENV)
-    }),
     new CopyWebpackPlugin([{
       from: "src/manifest.json",
       transform: function (content, path) {

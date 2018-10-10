@@ -4,7 +4,7 @@
   "description": "A simple, lightweight Twitter client for Chrome",
   "scripts": {
     "build": "webpack",
-    "start": "node utils/webserver.js"
+    "start": "webpack-dev-server"
   },
   "dependencies": {
     "@babel/plugin-proposal-class-properties": "^7.1.0",
