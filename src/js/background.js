@@ -43,7 +43,7 @@ const tweetsInOrder = new SortedSet([],
   (a,b) => BigInt(b.id_str) - BigInt(a.id_str),
 );
 
-function get_timeline() {
+function getTweets(max_id) {
   if(!twitter_auth.accessToken) {
     return;
   }
@@ -52,9 +52,13 @@ function get_timeline() {
     count: 200,
     tweet_mode: "extended",
   };
-  if(highest_id !== undefined) {
+  if(!max_id && highest_id !== undefined) {
     params.since_id = highest_id;
   }
+  else if(max_id) {
+    params.max_id = max_id;
+  }
+
   params = Object.entries(params).map(([k, v]) => `${k}=${v}`).join("&");
 
   oauth.get(`https://api.twitter.com/1.1/statuses/home_timeline.json?${params}`,
@@ -99,6 +103,29 @@ function get_timeline() {
       });
     });
 }
+function get_timeline() {
+  getTweets();
+}
+
+function get_twitter_config() {
+  oauth.get(`https://api.twitter.com/1.1/help/configuration.json`,
+        twitter_auth.accessToken,
+        twitter_auth.accessTokenSecret,
+        (err, responseData, result) => {
+          if(err) {
+            return console.error(err);
+          }
+          let data;
+          try {
+            data = JSON.parse(responseData);
+          }
+          catch(err) {
+            return console.error(err);
+          }
+          chrome.storage.local.set({twitter_config: data});
+        }
+      );
+}
 
 let authCallback = () => {};
 
@@ -108,6 +135,7 @@ chrome.storage.sync.get(["accessToken", "accessTokenSecret", "account"], items =
   if(items) {
     twitter_auth = items;
     get_timeline();
+    get_twitter_config();
   }
 });
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
@@ -124,6 +152,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       chrome.storage.sync.set(access);
       twitter_auth = access;
       reply(access.account);
+      get_twitter_config();
     });
     return true;
   }
@@ -158,7 +187,37 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 
     return true;
   }
+  if(msg.type === "LOAD_OLD_TWEETS") {
+    getTweets(msg.old_id);
+  }
   
+  if(msg.type === "POST_TWEET") {
+    oauth.post(`https://api.twitter.com/1.1/statuses/update.json?tweet_mode=extended`,
+      twitter_auth.accessToken,
+      twitter_auth.accessTokenSecret,
+      {status: msg.text},
+      (err, responseData, result) => {
+        if(err) {
+          console.error(err);
+          return reply({err});
+        }
+        let data;
+        try {
+          data = JSON.parse(responseData);
+        }
+        catch(err) {
+          console.error(err);
+          return reply({err});
+        }
+        tweetMap.set(data.id_str, data);
+        tweetsInOrder.push(data);
+        reply({err: null, success: true});
+        broadcast({type: "tweets", tweets: [data]})
+      }
+    );
+
+    return true;
+  }
   if(msg.type === "RETWEET") {
     oauth.post(`https://api.twitter.com/1.1/statuses/retweet/${msg.id_str}.json`,
       twitter_auth.accessToken,
@@ -210,7 +269,6 @@ chrome.runtime.onConnect.addListener(port => {
 
 function broadcast(msg) {
   ports.forEach(port => {
-    console.log(msg);
     port.postMessage(msg);
   });
 }

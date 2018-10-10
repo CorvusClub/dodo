@@ -28,7 +28,6 @@ class Timeline extends React.Component {
       }
     });
     this.scrollListener = event => {
-      let scrollPos = this.containerRef.current.scrollTop;
       let current_top_id = this.state.tweet_at_top_of_screen;
       let current_top = document.getElementById(current_top_id);
       if(!current_top) {
@@ -76,12 +75,15 @@ class Timeline extends React.Component {
       }
 
       let high_tweet_index = state.tweets.indexOf(high_tweet);
-      let count = page * 20;
+      let count = page * 15;
 
       let visible_tweets = state.tweets.slice(high_tweet_index, high_tweet_index + count);
       let moreTweetsAvailable = true;
       if(visible_tweets.length === 0 || state.tweets.length - count <= visible_tweets.length) {
         moreTweetsAvailable = false;
+      }
+      if(!moreTweetsAvailable && visible_tweets.length !== 0) {
+        chrome.runtime.sendMessage({type: "LOAD_OLD_TWEETS", old_id: state.tweets.max().id_str});
       }
 
       chrome.storage.sync.set({high_tweet_id});
