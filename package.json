@@ -1,0 +1,40 @@
+{
+  "name": "dodo",
+  "version": "1.3.0",
+  "description": "A simple, lightweight Twitter client for Chrome",
+  "scripts": {
+    "build": "webpack",
+    "start": "node utils/webserver.js"
+  },
+  "dependencies": {
+    "@babel/plugin-proposal-class-properties": "^7.1.0",
+    "collections": "^5.1.5",
+    "date-fns": "^2.0.0-alpha.21",
+    "oauth": "^0.9.15",
+    "react": "^16.5.2",
+    "react-dom": "^16.5.2",
+    "react-html-parser": "^2.0.2",
+    "react-infinite-scroller": "^1.2.1",
+    "react-redux": "^5.0.7",
+    "redux": "^4.0.0",
+    "twemoji": "^11.0.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.1.2",
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+    "@babel/preset-react": "^7.0.0",
+    "babel-loader": "^8.0.4",
+    "clean-webpack-plugin": "^0.1.17",
+    "copy-webpack-plugin": "^4.5.2",
+    "css-loader": "^1.0.0",
+    "file-loader": "^2.0.0",
+    "fs-extra": "^7.0.0",
+    "html-loader": "^0.5.5",
+    "html-webpack-plugin": "^3.2.0",
+    "style-loader": "^0.23.0",
+    "webpack": "^4.20.2",
+    "webpack-cli": "^3.1.2",
+    "webpack-dev-server": "^3.1.9",
+    "write-file-webpack-plugin": "^4.4.1"
+  }
+}

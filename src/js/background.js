@@ -1,90 +1,229 @@
 import "../img/dodo_128.png";
+import "../img/heart.png";
 import secrets from "secrets";
-import crypto from "crypto";
-
-class OAuth {
-  constructor(consumerKey, consumerSecret) {
-    this.consumerKey = consumerKey;
-    this.consumerSecret = consumerSecret;
-  }
-  getTimestamp() {
-    let now = (new Date()).getTime();
-    return Math.floor(now/1000);
-  }
-  getNonce() {
-    return crypto.randomBytes(16).toString('hex');
-  }
-  prepareParams(oauth_token, oauth_token_secret, method, url, otherParams) {
-    const params = {
-      oauth_timestamp: "1318467427", //this.getTimestamp(),
-      oauth_nonce: "ea9ec8429b68d6b77cd5600adbbb0456", //this.getNonce(),
-      oauth_signature_method: "HMAC-SHA1",
-      oauth_consumer_key: this.consumerKey,
-      oauth_version: "1.0",
-    };
-    Object.assign(params, otherParams);
-    console.log(params);
-    if(oauth_token) {
-      params[oauth_token] = oauth_token;
-    }
-    let signature = this.sign(method, url, params, oauth_token_secret);
-    params.oauth_signature = signature;
-    return params;
-  }
-  encode(str) {
-    return encodeURIComponent(str)
-      .replace(/\!/g, "%21")
-      .replace(/\'/g, "%27")
-      .replace(/\(/g, "%28")
-      .replace(/\)/g, "%29")
-      .replace(/\*/g, "%2A");
-  }
-  sortParams(params) {
-    let as_array = [];
-    for (const pair of Object.entries(params)) {
-      as_array.push(pair.map(this.encode));
-    }
-    return as_array.sort((a, b) => {
-      let keyComp = a[0].localeCompare(b[0]);
-      if(keyComp) return keyComp;
-      return a[1].localeCompare(b[1]);
-    });
-  }
-  sign(method, url, params, oauth_token_secret="") {
-    url = this.encode(url);
-    let sorted = this.sortParams(params);
-    params = sorted.map(i => `${i[0]}=${i[1]}`).join("&");
-    params = this.encode(params);
-    oauth_token_secret = this.encode(oauth_token_secret);
-    
-    let base = `${method}&${url}&${params}`;
-    console.log(base);
-    let key = this.consumerSecret;
-
-    return crypto.createHmac('sha1', key).update(base).digest('base64');
-  }
-
-  async request(oauth_token, oauth_token_secret, method, url, otherParams) {
-    let params = this.prepareParams(oauth_token, oauth_token_secret, method, url, otherParams);
-    console.log("OAuth " + this.sortParams(params).filter(p => p[0].startsWith("oauth")).map(p => `${p[0]}="${p[1]}"`).join(",\n\t"))
-    return fetch(url, {
-      headers: new Headers({
-        "Authorization": "OAuth " + this.sortParams(params).filter(p => p[0].startsWith("oauth")).map(p => `${p[0]}="${p[1]}"`).join(","),
-      }),
-      method,
-    });
-  }
-
-  async getRequestToken(oauth_callback) {
-    return this.request(null, null, "POST", "https://api.twitter.com/oauth/request_token", {oauth_callback});
-  }
-}
+import {OAuth} from "oauth";
+import SortedSet from "collections/sorted-set";
 
 const oauth = new OAuth(
+  "https://api.twitter.com/oauth/request_token",
+  "https://api.twitter.com/oauth/access_token",
   secrets.TWITTER.CONSUMER.KEY,
   secrets.TWITTER.CONSUMER.SECRET,
+  "1.0",
+  chrome.runtime.getURL("oauth_callback.html"),
+  "HMAC-SHA1",
 );
-async function getRequestToken() {
-  oauth.getRequestToken("http://localhost/sign-in-with-twitter/");
+async function getAuthToken() {
+  return new Promise((resolve, reject) => {
+    oauth.getOAuthRequestToken((err, token, tokenSecret, results) => {
+      if(err) return reject(err);
+      if(results.oauth_callback_confirmed) {
+        return resolve({token, tokenSecret});
+      }
+      reject("oauth callback rejected");
+    })
+  })
 }
-getRequestToken();
+
+async function getAccessToken(oauthData) {
+  return new Promise((resolve, reject) => {
+    oauth.getOAuthAccessToken(oauthData.token, oauthData.tokenSecret, oauthData.verifier, 
+      (err, accessToken, accessTokenSecret, results) => {
+        if(err) return reject(err);
+        resolve({accessToken, accessTokenSecret, account: results});
+    });
+  });
+}
+
+let highest_id, lowest_id;
+
+const tweetMap = new Map();
+const tweetsInOrder = new SortedSet([], 
+  (a,b) => a.id_str === b.id_str,
+  (a,b) => BigInt(b.id_str) - BigInt(a.id_str),
+);
+
+function get_timeline() {
+  if(!twitter_auth.accessToken) {
+    return;
+  }
+
+  let params = {
+    count: 200,
+    tweet_mode: "extended",
+  };
+  if(highest_id !== undefined) {
+    params.since_id = highest_id;
+  }
+  params = Object.entries(params).map(([k, v]) => `${k}=${v}`).join("&");
+
+  oauth.get(`https://api.twitter.com/1.1/statuses/home_timeline.json?${params}`,
+    twitter_auth.accessToken,
+    twitter_auth.accessTokenSecret,
+    (err, responseData, result) => {
+      if(err) {
+        return console.error(err);
+      }
+      let data;
+      try {
+        data = JSON.parse(responseData);
+      }
+      catch(err) {
+        return console.error(err);
+      }
+      data.forEach(tweet => {
+        let id = BigInt(tweet.id);
+        if(!highest_id || id > highest_id) {
+          highest_id = id;
+        }
+        tweetMap.set(tweet.id_str, tweet);
+        tweetsInOrder.add(tweet);
+      });
+      broadcast({type: "tweets", tweets: data})
+      chrome.storage.sync.get(["high_tweet_id"], data => {
+        let highest_tweet = tweetsInOrder.min();
+        let highest_tweet_id;
+        if(highest_tweet) {
+          highest_tweet_id = highest_tweet.id_str;
+        }
+        let high_tweet_id = data.high_tweet_id;
+        let showing_highest = high_tweet_id === highest_tweet_id;
+        let newTweetCount = 0;
+        if(high_tweet_id && !showing_highest) {
+          newTweetCount = tweetsInOrder.indexOf({id_str: high_tweet_id});
+          chrome.browserAction.setBadgeText({text: newTweetCount.toString()});
+        }
+        else {
+          chrome.browserAction.setBadgeText({text: ""});
+        }
+      });
+    });
+}
+
+let authCallback = () => {};
+
+let twitter_auth = {};
+
+chrome.storage.sync.get(["accessToken", "accessTokenSecret", "account"], items => {
+  if(items) {
+    twitter_auth = items;
+    get_timeline();
+  }
+});
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  if(msg.type === "AUTH") {
+    if(twitter_auth.accessToken) {
+      return reply(twitter_auth.account);
+    }
+    getAuthToken().then(async oauthData => {
+      let url = `https://api.twitter.com/oauth/authenticate?oauth_token=${oauthData.token}`;
+      chrome.tabs.create({url});
+      let callbackData = await new Promise(resolve => { authCallback = resolve} );
+      oauthData.verifier = callbackData.verifier;
+      let access = await getAccessToken(oauthData);
+      chrome.storage.sync.set(access);
+      twitter_auth = access;
+      reply(access.account);
+    });
+    return true;
+  }
+  if(msg.type === "AUTH_CALLBACK") {
+    authCallback(msg.oauthData);
+  }
+  if(msg.type === "POLL_TIMELINE") {
+    get_timeline();
+  }
+  if(msg.type === "GET_TWEET") {
+    if(tweetMap.has(msg.id_str)) {
+      return reply(tweetMap.get(msg.id_str));
+    }
+    oauth.get(`https://api.twitter.com/1.1/statuses/show/${msg.id_str}.json?tweet_mode=extended`,
+      twitter_auth.accessToken,
+      twitter_auth.accessTokenSecret,
+      (err, responseData, result) => {
+        if(err) {
+          return console.error(err);
+        }
+        let data;
+        try {
+          data = JSON.parse(responseData);
+        }
+        catch(err) {
+          return console.error(err);
+        }
+        tweetMap.set(data.id_str, data);
+        reply(data);
+      }
+    );
+
+    return true;
+  }
+  
+  if(msg.type === "RETWEET") {
+    oauth.post(`https://api.twitter.com/1.1/statuses/retweet/${msg.id_str}.json`,
+      twitter_auth.accessToken,
+      twitter_auth.accessTokenSecret,
+      null,
+      () => {},
+    );
+  }
+  if(msg.type === "UNRETWEET") {
+    oauth.post(`https://api.twitter.com/1.1/statuses/unretweet/${msg.id_str}.json`,
+      twitter_auth.accessToken,
+      twitter_auth.accessTokenSecret,
+      null,
+      () => {},
+    );
+  }
+  
+  if(msg.type === "FAVORITE") {
+    oauth.post(`https://api.twitter.com/1.1/favorites/create.json?id=${msg.id_str}`,
+      twitter_auth.accessToken,
+      twitter_auth.accessTokenSecret,
+      null,
+      () => {},
+    );
+  }
+  if(msg.type === "UNFAVORITE") {
+    oauth.post(`https://api.twitter.com/1.1/favorites/destroy.json?id=${msg.id_str}`,
+      twitter_auth.accessToken,
+      twitter_auth.accessTokenSecret,
+      null,
+      () => {},
+    );
+  }
+});
+
+const ports = new Set();
+chrome.runtime.onConnect.addListener(port => {
+  ports.add(port);
+  port.onDisconnect.addListener((disconnected) => {
+    ports.delete(disconnected);
+  })
+  port.onMessage.addListener(msg => {
+
+  });
+  let length = tweetsInOrder.length > 200 ? 200 : 0;
+  let tweets = tweetsInOrder.slice(0, length);
+  port.postMessage({type: "tweets", tweets});
+});
+
+function broadcast(msg) {
+  ports.forEach(port => {
+    console.log(msg);
+    port.postMessage(msg);
+  });
+}
+
+chrome.alarms.create("timeline_poll", {delayInMinutes: 1, periodInMinutes: 1.5});
+chrome.alarms.create("cleanup_tweets", {delayInMinutes: 10, periodInMinutes: 60});
+chrome.alarms.onAlarm.addListener(alarm => {
+  if(alarm.name === "timeline_poll") {
+    get_timeline();
+  }
+  if(alarm.name === "cleanup_tweets") {
+    tweetMap.clear();
+    tweetsInOrder.clear()
+    get_timeline();
+  }
+});
