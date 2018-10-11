@@ -118,9 +118,11 @@ class Tweet extends React.Component {
       let retweeted = !state.retweeted;
       if(retweeted) {
         chrome.runtime.sendMessage({type: "RETWEET", id_str});
+        props.data.retweet_count++;
       }
       else {
         chrome.runtime.sendMessage({type: "UNRETWEET", id_str});
+        props.data.retweet_count--;
       }
       return {
         retweeted
@@ -133,9 +135,11 @@ class Tweet extends React.Component {
       let favorited = !state.favorited;
       if(favorited) {
         chrome.runtime.sendMessage({type: "FAVORITE", id_str});
+        props.data.favorite_count++;
       }
       else {
         chrome.runtime.sendMessage({type: "UNFAVORITE", id_str});
+        props.data.favorite_count--;
       }
       return {
         favorited
