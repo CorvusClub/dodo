@@ -1,6 +1,6 @@
 {
   "name": "dodo",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "A simple, lightweight Twitter client for Chrome",
   "scripts": {
     "build": "webpack --config webpack.production.js",

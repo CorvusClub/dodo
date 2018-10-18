@@ -94,7 +94,7 @@ class Tweet extends React.Component {
 
     text = graphemes.join("");
 
-    text = text.replace(/\n/g, "<br />");
+    text = text.replace(/\n/g, "<br />").replace(/  /g, "&nbsp;&nbsp;");
 
     text = twemoji.parse(text, {folder: "svg",ext: '.svg'});
 

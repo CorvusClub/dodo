@@ -1,3 +1,5 @@
+# 1.4.2
+- Preserve whitespace in tweet display (fix ascii art)
 # 1.4.1
 - RTing and favoriting now updates the count on the tweet
 # 1.4.0
