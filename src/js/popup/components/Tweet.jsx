@@ -102,10 +102,10 @@ class Tweet extends React.Component {
 
     return ReactHtmlParser(text);
   }
-  toggleComposeReply() {
+  toggleComposeReply = () => {
     this.setState(state => ({composeReply: !state.composeReply}));
   }
-  toggleShowReply() {
+  toggleShowReply = () => {
     this.setState((state, props) => {
       let showing_reply = !state.showing_reply;
       if(showing_reply && !state.reply_tweet) {
@@ -117,7 +117,7 @@ class Tweet extends React.Component {
       return {showing_reply}
     });
   }
-  toggleRT() {
+  toggleRT = () => {
     this.setState((state, props) => {
       let id_str = props.data.id_str;
       let retweeted = !state.retweeted;
@@ -134,7 +134,7 @@ class Tweet extends React.Component {
       };
     });
   }
-  toggleFav() {
+  toggleFav = () => {
     this.setState((state, props) => {
       let id_str = props.data.id_str;
       let favorited = !state.favorited;
@@ -195,10 +195,10 @@ class Tweet extends React.Component {
           {tweet.quoted_status ? <Tweet data={tweet.quoted_status} /> : ""}
         </div>
         <div className="buttons">
-          <button className="replyButton" onClick={() => this.toggleComposeReply()}><span className="Icon Icon--medium Icon--reply"></span></button>
-          <button className="rtButton" className={this.state.retweeted ? "retweeted" : ""} onClick={() => this.toggleRT()}><span className="Icon Icon--medium Icon--retweet"></span></button>
+          <button className="replyButton" onClick={this.toggleComposeReply}><span className="Icon Icon--medium Icon--reply"></span></button>
+          <button className="rtButton" className={this.state.retweeted ? "retweeted" : ""} onClick={this.toggleRT}><span className="Icon Icon--medium Icon--retweet"></span></button>
           <span className="retweetCount">{tweet.retweet_count > 0 ? tweet.retweet_count : ""}</span>
-          <button className="favoriteButton" className={this.state.favorited ? "favorited" : ""} onClick={() => this.toggleFav()}><span className="Icon Icon--heart Icon--medium"></span></button>
+          <button className="favoriteButton" className={this.state.favorited ? "favorited" : ""} onClick={this.toggleFav}><span className="Icon Icon--heart Icon--medium"></span></button>
           <span className="favoriteCount">{tweet.favorite_count > 0 ? tweet.favorite_count : ""}</span>
         </div>
         <span className="footer">
@@ -206,11 +206,11 @@ class Tweet extends React.Component {
             {formatDate(tweet.created_at)}
           </a>
           {is_quote ? <a className="quote_by" href={"https://twitter.com/" + tweet.quoted_status.user.screen_name} target="_blank"> quoting @{tweet.quoted_status.user.screen_name}</a> : ""}
-          {is_reply ? <a className="reply_by" onClick={() => this.toggleShowReply()}> in reply to @{tweet.in_reply_to_screen_name}</a> : ""}
+          {is_reply ? <a className="reply_by" onClick={this.toggleShowReply}> in reply to @{tweet.in_reply_to_screen_name}</a> : ""}
           {is_rt ? <a className="rt_by" href={"https://twitter.com/" + source_user.screen_name} target="_blank"> retweeted by @{source_user.screen_name}</a> : ""}
         </span>
         {reply}
-        {this.state.composeReply ? <TweetComposer close={() => this.toggleComposeReply()} inReplyTo={this.props.data} /> : ""}
+        {this.state.composeReply ? <TweetComposer close={this.toggleComposeReply} inReplyTo={this.props.data} /> : ""}
       </div>
     );
   }

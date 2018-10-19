@@ -1,3 +1,5 @@
+# 1.5.1
+- use class properties rather than redefining arrow funs on render, for slight performance improvement
 # 1.5.0
 - Reply support! New reply icon under tweets opens a reply composer under it.
 # 1.4.2
