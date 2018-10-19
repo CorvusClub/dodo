@@ -231,9 +231,6 @@ img.emoji {
 .tweet .buttons .span {
   display: inline-block;
 }
-.tweet .retweetCount {
-  padding-right: 1em;
-}
 .tweet .buttons button {
   background: transparent;
   border: none;
@@ -259,6 +256,11 @@ img.emoji {
 }
 .tweet .buttons .retweeted {
   color: #17bf63;
+}
+
+.tweet .tweet_compose {
+  grid-row: 5;
+  grid-column: 2;
 }
 
 .timeline .showNewerTweets {

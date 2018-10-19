@@ -13,15 +13,11 @@ class App extends React.Component {
     this.timeline = React.createRef();
     this.twitter = chrome.runtime.connect({name: "twitter"});
   }
-  replyToTweet = (tweet) => {
-    console.log(tweet);
-  }
   toggleTweetComposer = () => {
     this.setState(state => ({composeTweetOpen: !state.composeTweetOpen}));
   }
   render() {
     let tweetComposerSection;
-
     if(this.state.composeTweetOpen) {
       tweetComposerSection = <TweetComposer close={this.toggleTweetComposer}/>;
     }

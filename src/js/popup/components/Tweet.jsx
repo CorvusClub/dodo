@@ -1,6 +1,7 @@
 import React from "react";
 
 import Media from "./Media";
+import TweetComposer from "./TweetComposer";
 
 import formatDistance from 'date-fns/formatDistance';
 import formatRelative from 'date-fns/formatRelative';
@@ -30,6 +31,7 @@ class Tweet extends React.Component {
     this.state = {
       showing_reply: false,
       reply_tweet: null,
+      composeReply: false,
       retweeted: props.data.retweeted,
       favorited: props.data.favorited,
     };
@@ -99,6 +101,9 @@ class Tweet extends React.Component {
     text = twemoji.parse(text, {folder: "svg",ext: '.svg'});
 
     return ReactHtmlParser(text);
+  }
+  toggleComposeReply() {
+    this.setState(state => ({composeReply: !state.composeReply}));
   }
   toggleShowReply() {
     this.setState((state, props) => {
@@ -190,6 +195,7 @@ class Tweet extends React.Component {
           {tweet.quoted_status ? <Tweet data={tweet.quoted_status} /> : ""}
         </div>
         <div className="buttons">
+          <button className="replyButton" onClick={() => this.toggleComposeReply()}><span className="Icon Icon--medium Icon--reply"></span></button>
           <button className="rtButton" className={this.state.retweeted ? "retweeted" : ""} onClick={() => this.toggleRT()}><span className="Icon Icon--medium Icon--retweet"></span></button>
           <span className="retweetCount">{tweet.retweet_count > 0 ? tweet.retweet_count : ""}</span>
           <button className="favoriteButton" className={this.state.favorited ? "favorited" : ""} onClick={() => this.toggleFav()}><span className="Icon Icon--heart Icon--medium"></span></button>
@@ -204,6 +210,7 @@ class Tweet extends React.Component {
           {is_rt ? <a className="rt_by" href={"https://twitter.com/" + source_user.screen_name} target="_blank"> retweeted by @{source_user.screen_name}</a> : ""}
         </span>
         {reply}
+        {this.state.composeReply ? <TweetComposer close={() => this.toggleComposeReply()} inReplyTo={this.props.data} /> : ""}
       </div>
     );
   }

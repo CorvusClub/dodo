@@ -71,7 +71,6 @@ class TweetComposer extends React.Component {
     super(props);
     this.state = {
       tweetText: "",
-      displayText: "",
       parsedTweet: twitterText.parseTweet(""),
       sendingTweet: false,
     };
@@ -104,8 +103,12 @@ class TweetComposer extends React.Component {
   }
   sendTweet = () => {
     this.setState({sendingTweet: true});
-    chrome.runtime.sendMessage({type: "POST_TWEET", text: this.state.tweetText}, (response) => {
-      console.log(response);
+    let message = {type: "POST_TWEET", text: this.state.tweetText};
+    if(this.props.inReplyTo) {
+      message.text = `@${this.props.inReplyTo.user.screen_name} ${message.text}`;
+      message.in_reply_to_status_id = this.props.inReplyTo.id_str;
+    }
+    chrome.runtime.sendMessage(message, (response) => {
       this.setState({
         sendingTweet: false,
       });

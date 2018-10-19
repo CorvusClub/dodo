@@ -192,10 +192,14 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   }
   
   if(msg.type === "POST_TWEET") {
+    let tweetBody = {status: msg.text};
+    if(msg.in_reply_to_status_id) {
+      tweetBody.in_reply_to_status_id = msg.in_reply_to_status_id;
+    }
     oauth.post(`https://api.twitter.com/1.1/statuses/update.json?tweet_mode=extended`,
       twitter_auth.accessToken,
       twitter_auth.accessTokenSecret,
-      {status: msg.text},
+      tweetBody,
       (err, responseData, result) => {
         if(err) {
           console.error(err);

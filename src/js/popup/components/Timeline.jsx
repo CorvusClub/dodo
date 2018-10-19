@@ -108,7 +108,7 @@ class Timeline extends React.Component {
 
   render() {
     let tweets = this.state.visible_tweets.map(tweet => {
-      return <Tweet data={tweet} fetchTweet={this.fetchTweet} key={tweet.id_str} id={tweet.id_str} />
+      return <Tweet data={tweet} key={tweet.id_str} id={tweet.id_str} />
     });
     let highest_tweet = this.state.tweets.min();
     let highest_tweet_id;

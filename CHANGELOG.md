@@ -1,3 +1,5 @@
+# 1.5.0
+- Reply support! New reply icon under tweets opens a reply composer under it.
 # 1.4.2
 - Preserve whitespace in tweet display (fix ascii art)
 # 1.4.1
